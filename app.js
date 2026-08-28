@@ -81,6 +81,7 @@ const PLAYER_NAME_STORAGE_KEY = "squat-bird-campus-player-name";
 const LEADERBOARD_STORAGE_KEY = "squat-bird-campus-leaderboard";
 const LEADERBOARD_LIMIT = 8;
 const GAME_OVER_LEADERBOARD_LIMIT = 5;
+const HANDS_MISSING_TARGET = 0.12;
 
 const dom = {
   menuScreen: document.getElementById("menuScreen"),
@@ -631,30 +632,34 @@ function tick(delta, now) {
 }
 
 function updateProgressiveDifficulty(game) {
-  const scoreFactor = clamp(game.score / 18, 0, 1);
-  const timeFactor = clamp(game.elapsed / 80, 0, 1);
-  const ramp = clamp((scoreFactor * 0.62) + (timeFactor * 0.48), 0, 1);
+  const scoreFactor = clamp(game.score / 14, 0, 1);
+  const timeFactor = clamp(game.elapsed / 55, 0, 1);
+  const distanceFactor = clamp((game.score + (game.elapsed * 0.12)) / 18, 0, 1.2);
+  const ramp = clamp((scoreFactor * 0.62) + (timeFactor * 0.34) + (distanceFactor * 0.28), 0, 1.25);
 
-  game.difficultyFactor = lerp(game.difficultyFactor, 1 + (ramp * 0.96), 0.08);
-  game.obstacleSpeed = lerp(158, 282, ramp);
-  game.obstacleSpacing = lerp(2.5, 1.3, ramp);
-  game.gapSize = lerp(332, 236, ramp);
+  game.difficultyFactor = lerp(game.difficultyFactor, 1 + (ramp * 1.45), 0.11);
+  game.obstacleSpeed = lerp(158, 374, clamp(ramp, 0, 1));
+  game.obstacleSpacing = lerp(2.5, 0.96, clamp(ramp, 0, 1));
+  game.gapSize = lerp(332, 184, clamp(ramp, 0, 1));
 }
 
 function applyBirdPhysics(delta, birdConfig, gentleMode) {
   const bird = state.game.bird;
   const topLimit = SOFT_TOP_LIMIT;
   const bottomLimit = state.game.height - SOFT_BOTTOM_MARGIN;
-  const targetY = lerp(bottomLimit, topLimit, state.control.targetNormalized);
-  const minVelocity = gentleMode ? -210 : -280;
-  const maxVelocity = gentleMode ? 210 : 280;
-  const followStrength = gentleMode ? 5.6 : 6.8;
-  const response = gentleMode ? 0.18 : 0.24;
-  const idleDrift = gentleMode ? 22 : 34;
+  const hasHands = state.control.activeHands > 0;
+  const fallbackTarget = gentleMode ? 0.26 : HANDS_MISSING_TARGET;
+  const desiredNormalized = hasHands ? state.control.targetNormalized : fallbackTarget;
+  const targetY = lerp(bottomLimit, topLimit, desiredNormalized);
+  const minVelocity = gentleMode ? -210 : -320;
+  const maxVelocity = gentleMode ? 210 : 340;
+  const followStrength = gentleMode ? 5.6 : 7.8;
+  const response = gentleMode ? 0.18 : 0.3;
+  const idleDrift = gentleMode ? 90 : 188;
   const activeControl = state.control.activeHands > 0;
   const desiredVelocity = clamp((targetY - bird.y) * followStrength, minVelocity, maxVelocity);
 
-  bird.vy = lerp(bird.vy, desiredVelocity, activeControl ? response : response * 0.42);
+  bird.vy = lerp(bird.vy, desiredVelocity, activeControl ? response : response * 0.84);
   if (!activeControl) {
     bird.vy += idleDrift * delta;
   }
@@ -1304,11 +1309,11 @@ function decayHandSignals() {
   state.control.right.laneCoverage = lerp(state.control.right.laneCoverage, 0, 0.2);
   state.control.left.active = false;
   state.control.right.active = false;
-  state.control.targetNormalized = lerp(state.control.targetNormalized, 0.52, 0.1);
+  state.control.targetNormalized = lerp(state.control.targetNormalized, HANDS_MISSING_TARGET, 0.26);
   state.control.trackingStrength = lerp(state.control.trackingStrength, 0, 0.12);
   state.control.activeHands = 0;
-  state.control.lift = lerp(state.control.lift, state.control.targetNormalized, 0.12);
-  state.control.drop = lerp(state.control.drop, 1 - state.control.targetNormalized, 0.1);
+  state.control.lift = lerp(state.control.lift, state.control.targetNormalized, 0.22);
+  state.control.drop = lerp(state.control.drop, 1 - state.control.targetNormalized, 0.22);
 }
 
 async function initializeHandTracking() {
