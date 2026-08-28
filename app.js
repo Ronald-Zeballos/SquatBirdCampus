@@ -302,6 +302,10 @@ function saveLeaderboard() {
   localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(state.leaderboard));
 }
 
+function canUseCameraOrigin() {
+  return window.isSecureContext || /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+}
+
 function renderLeaderboard() {
   renderLeaderboardList(dom.leaderboardList, dom.leaderboardEmpty, LEADERBOARD_LIMIT);
   renderLeaderboardList(dom.gameOverLeaderboardList, dom.gameOverLeaderboardEmpty, GAME_OVER_LEADERBOARD_LIMIT);
@@ -1346,6 +1350,12 @@ async function initializeHandTracking() {
 
 async function startCamera() {
   if (state.stream) {
+    return;
+  }
+
+  if (!canUseCameraOrigin()) {
+    dom.cameraStatus.textContent = "La camara requiere localhost o HTTPS.";
+    dom.cameraHint.textContent = "Abre el juego como http://localhost:4173. En Docker no uses el HTML directo ni una IP insegura.";
     return;
   }
 

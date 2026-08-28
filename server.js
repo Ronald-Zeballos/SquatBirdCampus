@@ -4,6 +4,7 @@ const path = require("path");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
+const host = process.env.HOST || "0.0.0.0";
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -54,6 +55,7 @@ http.createServer((req, res) => {
       });
     });
   });
-}).listen(port, "127.0.0.1", () => {
-  console.log(`Squat Bird Campus Web en http://127.0.0.1:${port}`);
+}).listen(port, host, () => {
+  const publicHost = host === "0.0.0.0" ? "localhost" : host;
+  console.log(`Squat Bird Campus Web en http://${publicHost}:${port}`);
 });
